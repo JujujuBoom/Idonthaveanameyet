@@ -71,9 +71,9 @@
             height: 100%;
             pointer-events: none;
         }
-        #galaxy { z-index: 1; }
-        #stars { z-index: 2; }
-        #fireworks { z-index: 5; }
+        /* 合并为一个Canvas以简化渲染并避免层级问题 */
+        #mainCanvas { z-index: 5; }
+        
         .footer {
             position: fixed;
             bottom: 20px;
@@ -91,10 +91,8 @@
     </style>
 </head>
 <body>
-    <!-- 三层Canvas：银河层 -> 星星层 -> 烟花层 -->
-    <canvas id="galaxy"></canvas>
-    <canvas id="stars"></canvas>
-    <canvas id="fireworks"></canvas>
+    <!-- 只保留一个主Canvas，所有东西都在上面画，避免层级混乱 -->
+    <canvas id="mainCanvas"></canvas>
     
     <div class="container">
         <h1>This is Julie's Website</h1>
@@ -104,70 +102,73 @@
     <div class="footer">Made with ❤️ for Julie</div>
 
     <script>
-        // --- Setup Canvases ---
-        const galaxyCanvas = document.getElementById('galaxy');
-        const galaxyCtx = galaxyCanvas.getContext('2d');
-        const starsCanvas = document.getElementById('stars');
-        const starsCtx = starsCanvas.getContext('2d');
-        const fireworksCanvas = document.getElementById('fireworks');
-        const ctx = fireworksCanvas.getContext('2d');
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
         
-        let width = galaxyCanvas.width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
-        let height = galaxyCanvas.height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
 
         window.addEventListener('resize', () => {
-            width = galaxyCanvas.width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
-            height = galaxyCanvas.height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
             initGalaxy();
             initStars();
         });
 
-        // --- 1. Galaxy Background (Milky Way) ---
-        const galaxyParticles = [];
+        // --- 配置参数 ---
+        const CONFIG = {
+            starCount: 200,
+            galaxyCount: 1500,
+            bgFireworkChance: 0.008, // 每帧产生背景烟花的概率 (约每2秒一个)
+            maxBgFireworks: 2,       // 同时存在的背景烟花最大数量
+            colors: [
+                '#ff0040', '#ff0080', '#ff00bf', '#ff00ff', 
+                '#00ffff', '#00bfff', '#0080ff', '#0040ff', 
+                '#ffff00', '#ffbf00', '#ff8000', '#ff4000', 
+                '#00ff00', '#80ff00', '#ffffff'
+            ]
+        };
+
+        // --- 数据状态 ---
+        let stars = [];
+        let galaxyParticles = [];
+        let rockets = [];
+        let lastTime = 0;
+        let bgFireworkTimer = 0;
+
+        // --- 1. 初始化银河 ---
         function initGalaxy() {
-            galaxyParticles.length = 0;
-            const count = 1500; // 银河星星数量
-            for (let i = 0; i < count; i++) {
-                // 银河形状：中间宽，两边窄，呈带状分布
+            galaxyParticles = [];
+            for (let i = 0; i < CONFIG.galaxyCount; i++) {
                 const x = Math.random() * width;
                 const centerX = width / 2;
                 const distFromCenter = Math.abs(x - centerX);
                 const maxDist = width * 0.8;
                 
-                // 越靠近中心，Y轴分布越集中；越远越分散，形成带状
-                const spread = (distFromCenter / maxDist) * (height * 0.4) + 50;
-                const centerY = height / 2 + Math.sin((x / width) * Math.PI * 2) * 50; // 轻微弯曲
+                // 银河形状算法
+                const spread = (distFromCenter / maxDist) * (height * 0.5) + 50;
+                const centerY = height / 2 + Math.sin((x / width) * Math.PI * 2 - Math.PI/2) * (height * 0.15);
                 
                 const y = centerY + (Math.random() - 0.5) * spread;
                 
-                // 只有落在带内的才保留，形成银河形状
+                // 只有落在带内的才保留
                 if (Math.abs(y - centerY) < spread / 2) {
                     galaxyParticles.push({
                         x: x,
                         y: y,
-                        size: Math.random() * 1.2,
-                        alpha: Math.random() * 0.4 + 0.1, // 比较暗淡
-                        color: `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, 255,`
+                        size: Math.random() * 1.5,
+                        alpha: Math.random() * 0.5 + 0.1,
+                        blue: 200 + Math.random() * 55,
+                        red: 200 + Math.random() * 55
                     });
                 }
             }
         }
 
-        function drawGalaxy() {
-            galaxyCtx.clearRect(0, 0, width, height);
-            galaxyParticles.forEach(p => {
-                galaxyCtx.beginPath();
-                galaxyCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                galaxyCtx.fillStyle = `${p.color} ${p.alpha})`;
-                galaxyCtx.fill();
-            });
-        }
-
-        // --- 2. Twinkling Stars ---
-        const stars = [];
+        // --- 2. 初始化星星 ---
         function initStars() {
-            stars.length = 0;
-            for (let i = 0; i < 200; i++) {
+            stars = [];
+            for (let i = 0; i < CONFIG.starCount; i++) {
                 stars.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
@@ -179,35 +180,14 @@
             }
         }
 
-        function drawStars() {
-            starsCtx.clearRect(0, 0, width, height);
-            stars.forEach(star => {
-                star.phase += star.oscillationSpeed;
-                const alpha = star.baseAlpha + Math.sin(star.phase) * 0.2;
-                starsCtx.beginPath();
-                starsCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                starsCtx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, Math.min(1, alpha))})`;
-                starsCtx.fill();
-            });
-            requestAnimationFrame(drawStars);
-        }
-
-        // --- 3. Fireworks System ---
-        const colors = [
-            '#ff0040', '#ff0080', '#ff00bf', '#ff00ff', 
-            '#00ffff', '#00bfff', '#0080ff', '#0040ff', 
-            '#ffff00', '#ffbf00', '#ff8000', '#ff4000', 
-            '#00ff00', '#80ff00', '#ffffff'
-        ];
-
+        // --- 3. 烟花类 ---
         class Particle {
             constructor(x, y, color, velocity, angle, isBig) {
                 this.x = x;
                 this.y = y;
                 this.color = color;
                 this.alpha = 1;
-                // 大烟花消失得慢一点，小烟花快一点
-                this.decay = isBig ? (Math.random() * 0.012 + 0.006) : (Math.random() * 0.02 + 0.01); 
+                this.decay = isBig ? (Math.random() * 0.012 + 0.006) : (Math.random() * 0.025 + 0.015); 
                 
                 const spread = isBig ? 0.5 : 0.2;
                 this.vx = Math.cos(angle) * velocity + (Math.random() - 0.5) * spread;
@@ -221,7 +201,7 @@
             }
 
             update() {
-                this.trail.push({x: this.x, y: this.y, alpha: this.alpha});
+                this.trail.push({x: this.x, y: this.y});
                 if (this.trail.length > this.maxTrail) this.trail.shift();
 
                 this.vx *= this.friction;
@@ -236,7 +216,7 @@
             draw(context) {
                 if (this.alpha <= 0) return;
 
-                // Draw Trail
+                // 绘制拖尾
                 if (this.trail.length > 1) {
                     context.beginPath();
                     context.moveTo(this.trail[0].x, this.trail[0].y);
@@ -250,7 +230,7 @@
                     context.stroke();
                 }
 
-                // Draw Head
+                // 绘制粒子头
                 context.beginPath();
                 const radius = this.isBig ? 3 : 1.5;
                 context.arc(this.x, this.y, radius, 0, Math.PI * 2);
@@ -271,11 +251,10 @@
                 this.y = height;
                 this.targetX = targetX || Math.random() * (width * 0.8) + (width * 0.1);
                 this.targetY = targetY || Math.random() * (height * 0.35) + (height * 0.1);
-                this.color = color || colors[Math.floor(Math.random() * colors.length)];
-                this.isBig = isBig; // 标记是大烟花还是背景小烟花
+                this.color = color || CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)];
+                this.isBig = isBig;
                 
                 const angle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
-                // 大烟花速度快，小烟花速度慢
                 const speed = isBig ? (13 + Math.random() * 3) : (8 + Math.random() * 2);
                 
                 this.vx = Math.cos(angle) * speed;
@@ -300,6 +279,7 @@
                     }
                 } else {
                     this.particles.forEach(p => p.update());
+                    // 关键修复：过滤掉消失的粒子，防止内存泄漏
                     this.particles = this.particles.filter(p => p.alpha > 0.05);
                 }
             }
@@ -334,12 +314,9 @@
 
             explode() {
                 this.exploded = true;
-                // 大烟花：粒子多，范围大
-                // 小烟花：粒子少，范围小，颜色淡
                 const count = this.isBig ? 150 : 40;
                 const baseVelocity = this.isBig ? 5 : 2.5;
                 
-                // 如果是小烟花，降低颜色透明度，让它看起来更远
                 let displayColor = this.color;
                 if (!this.isBig) {
                     const rgb = this.color.match(/\d+/g);
@@ -353,7 +330,6 @@
                 }
                 
                 if (this.isBig) {
-                    // 大烟花额外加闪光
                     for (let i = 0; i < 40; i++) {
                         const angle = Math.random() * Math.PI * 2;
                         const velocity = Math.random() * 6 + 3;
@@ -367,57 +343,72 @@
             }
         }
 
-        let rockets = [];
-        let lastBackgroundFireworkTime = 0;
+        // --- 主循环 ---
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
 
+            // 1. 清空画布 (带一点拖尾效果)
+            ctx.fillStyle = 'rgba(9, 10, 15, 0.3)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            // 2. 绘制银河 (静态但每帧重绘以确保显示)
+            galaxyParticles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${p.red}, ${p.blue}, 255, ${p.alpha})`;
+                ctx.fill();
+            });
+
+            // 3. 绘制闪烁星星
+            stars.forEach(star => {
+                star.phase += star.oscillationSpeed;
+                const alpha = star.baseAlpha + Math.sin(star.phase) * 0.2;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, Math.min(1, alpha))})`;
+                ctx.fill();
+            });
+
+            // 4. 更新和绘制烟花
+            // 关键修复：使用 filter 彻底移除完成的火箭，防止数组无限增长
+            rockets = rockets.filter(rocket => {
+                rocket.update();
+                rocket.draw();
+                return !rocket.isDone();
+            });
+
+            // 5. 自动生成背景烟花 (带限流)
+            // 只有当背景烟花数量少于限制时才生成
+            const currentBgFireworks = rockets.filter(r => !r.isBig).length;
+            if (currentBgFireworks < CONFIG.maxBgFireworks) {
+                bgFireworkTimer += deltaTime;
+                // 随机间隔 2~4 秒
+                if (bgFireworkTimer > 2000 + Math.random() * 2000) {
+                    rockets.push(new Rocket(null, null, null, false));
+                    bgFireworkTimer = 0;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- 交互 ---
         function launchBigFirework() {
             // 点击按钮：发射 3 个大烟花
-            const count = 3;
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < 3; i++) {
                 setTimeout(() => {
                     rockets.push(new Rocket(null, null, null, true));
                 }, i * 300);
             }
         }
 
-        function launchBackgroundFirework() {
-            // 背景自动：偶尔发射 1 个小烟花
-            rockets.push(new Rocket(null, null, null, false));
-        }
-
-        function animate(timestamp) {
-            // 清空烟花层，保留拖尾效果
-            ctx.fillStyle = 'rgba(15, 12, 41, 0.2)';
-            ctx.fillRect(0, 0, width, height);
-            
-            // 更新烟花
-            rockets = rockets.filter(rocket => {
-                rocket.update();
-                rocket.draw();
-                return !rocket.isDone();
-            });
-            
-            // 逻辑：背景自动放烟花 (每 2.5 秒 ~ 4.5 秒 一次)
-            if (timestamp - lastBackgroundFireworkTime > 2500 + Math.random() * 2000) {
-                launchBackgroundFirework();
-                lastBackgroundFireworkTime = timestamp;
-            }
-            
-            requestAnimationFrame(animate);
-        }
-
-        // --- Initialization ---
-        initGalaxy();
-        drawGalaxy(); // 静态绘制银河，不需要每帧重绘，除非需要动态效果
-        // 如果需要银河微动，可以把 drawGalaxy() 放入 animate 循环，但为了性能这里静态即可
-        
-        initStars();
-        drawStars(); // 星星动态闪烁
-
-        // Event Listener
         document.getElementById('magicBtn').addEventListener('click', launchBigFirework);
 
-        // Start Loop
+        // --- 启动 ---
+        initGalaxy();
+        initStars();
         requestAnimationFrame(animate);
 
     </script>
