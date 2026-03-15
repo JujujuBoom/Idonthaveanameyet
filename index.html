@@ -91,7 +91,7 @@
         // Twinkling stars
         function drawStars() {
             starsCtx.clearRect(0, 0, width, height);
-            for (let i = 0; i < 300; i++) {  // Fixed: i < 300
+            for (let i = 0; i < 300; i++) {
                 const x = Math.random() * width;
                 const y = Math.random() * height;
                 const radius = Math.random() * 1.5;
@@ -178,7 +178,8 @@
                     const speed = Math.random() * 3 + 3; // Reduced speed for smaller burst
                     const isInner = Math.random() < 0.5;
                     this.particles.push({
-                        x: this.x, y: this.y;
+                        x: this.x,
+                        y: this.y,
                         vx: speed * Math.cos(angle) + (Math.random() - 0.5) * 1,
                         vy: speed * Math.sin(angle) + (Math.random() - 0.5) * 1,
                         color: isInner ? this.innerColor : this.outerColor,
