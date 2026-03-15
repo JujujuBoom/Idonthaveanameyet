@@ -91,7 +91,7 @@
         // Twinkling stars
         function drawStars() {
             starsCtx.clearRect(0, 0, width, height);
-            for (let i = 0; i < 300; i++) {
+            for (let i = 0; i = 300; i++) {
                 const x = Math.random() * width;
                 const y = Math.random() * height;
                 const radius = Math.random() * 1.5;
@@ -105,6 +105,10 @@
         drawStars();
         setInterval(drawStars, 2000); // Twinkle effect
 
+        // Load Labubu image
+        const labubuImg = new Image();
+        labubuImg.src = 'https://i.ytimg.com/vi/tWW77C8bhQQ/sddefault.jpg'; // Labubu drawing image
+
         // Fireworks
         class Rocket {
             constructor() {
@@ -116,6 +120,7 @@
                 this.outerColor = this.innerColor === '#ff0000' ? '#ff69b4' : this.innerColor === '#00ff00' ? '#00ffff' : this.innerColor; // Matching halo
                 this.exploded = false;
                 this.particles = [];
+                this.labubuAlpha = 0;
             }
             update() {
                 if (!this.exploded) {
@@ -127,22 +132,23 @@
                     this.particles.forEach(p => {
                         p.x += p.vx;
                         p.y += p.vy;
-                        p.vy += 0.05; // Lighter gravity for slower fall
+                        p.vy += 0.05; // Lighter gravity
                         p.alpha -= p.decay;
-                        p.trail.push({x: p.x, y: p.y, alpha: p.alpha}); // For tail
-                        if (p.trail.length > 10) p.trail.shift(); // Limit tail length
+                        p.trail.push({x: p.x, y: p.y, alpha: p.alpha});
+                        if (p.trail.length > 5) p.trail.shift(); // Reduced tail for performance
                     });
                     this.particles = this.particles.filter(p => p.alpha > 0.1);
+                    if (this.particles.length < 30 && this.labubuAlpha < 1) {
+                        this.labubuAlpha += 0.02; // Fade in Labubu
+                    }
                 }
             }
             draw() {
-                ctx.shadowBlur = 10; // Glow effect
-                ctx.shadowColor = this.innerColor;
+                // No shadowBlur for performance and visibility
                 if (!this.exploded) {
-                    // Draw rocket trail
                     ctx.beginPath();
                     ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(this.x, this.y + 20); // Longer tail
+                    ctx.lineTo(this.x, this.y + 20);
                     ctx.strokeStyle = this.innerColor;
                     ctx.lineWidth = 3;
                     ctx.stroke();
@@ -153,60 +159,64 @@
                         p.trail.forEach((t, i) => {
                             ctx.lineTo(t.x, t.y);
                             ctx.strokeStyle = `${p.color}${(t.alpha * 255 * (1 - i / p.trail.length)).toString(16).padStart(2, '0')}`;
-                            ctx.lineWidth = 2 * (1 - i / p.trail.length); // Thinner towards tail
+                            ctx.lineWidth = 2 * (1 - i / p.trail.length);
                             ctx.stroke();
                         });
                     });
+                    if (this.labubuAlpha > 0 && labubuImg.complete) {
+                        ctx.globalAlpha = this.labubuAlpha;
+                        ctx.drawImage(labubuImg, this.x - 160, this.y - 120, 320, 240); // Adjusted size
+                        ctx.globalAlpha = 1;
+                    }
                 }
-                ctx.shadowBlur = 0;
             }
             explode() {
                 this.exploded = true;
-                const numParticles = 200; // Denser burst
+                const numParticles = 100; // Reduced for performance
                 for (let i = 0; i < numParticles; i++) {
                     const angle = (i / numParticles) * Math.PI * 2;
-                    const speed = Math.random() * 5 + 5; // Varied speed for layers
-                    const isInner = Math.random() < 0.5; // Half inner, half outer
+                    const speed = Math.random() * 3 + 3; // Reduced speed for smaller burst
+                    const isInner = Math.random() < 0.5;
                     this.particles.push({
                         x: this.x, y: this.y,
-                        vx: speed * Math.cos(angle) + (Math.random() - 0.5) * 1, // Mostly radial with slight random
+                        vx: speed * Math.cos(angle) + (Math.random() - 0.5) * 1,
                         vy: speed * Math.sin(angle) + (Math.random() - 0.5) * 1,
                         color: isInner ? this.innerColor : this.outerColor,
                         alpha: 1,
-                        decay: Math.random() * 0.01 + 0.005, // Slower fade
-                        trail: [] // For drawing streaks
+                        decay: Math.random() * 0.01 + 0.005,
+                        trail: []
                     });
                 }
             }
             isDone() {
-                return this.exploded && this.particles.length === 0;
+                return this.exploded && this.particles.length === 0 && this.labubuAlpha >= 1;
             }
         }
 
         let rockets = [];
 
         function launchFireworks() {
-            for (let i = 0; i < 3; i++) { // Launch 3 rockets per click
-                setTimeout(() => rockets.push(new Rocket()), i * 300); // Slight delay for sequence
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => rockets.push(new Rocket()), i * 300);
             }
         }
 
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Gentle fade for smoke trails
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'; // Lighter fade
             ctx.fillRect(0, 0, width, height);
             rockets.forEach((rocket, index) => {
                 rocket.update();
                 rocket.draw();
                 if (rocket.isDone()) rockets.splice(index, 1);
             });
-            if (Math.random() < 0.005) { // Rare random launch
+            if (Math.random() < 0.005) {
                 rockets.push(new Rocket());
             }
             requestAnimationFrame(animate);
         }
         animate();
 
-        // Initial launches after page load
+        // Initial launches
         setTimeout(() => {
             for (let i = 0; i < 3; i++) {
                 setTimeout(() => rockets.push(new Rocket()), i * 300);
