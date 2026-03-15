@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Julie's Website - Beautiful Fireworks</title>
+    <title>Julie's Website - Galaxy & Fireworks</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,7 +12,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            /* 深邃夜空背景 */
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
             position: relative;
@@ -25,35 +26,39 @@
         h1 {
             font-size: 3rem;
             color: #fff;
-            text-shadow: 0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(100, 200, 255, 0.4);
             margin-bottom: 2rem;
-            animation: glow 2s ease-in-out infinite alternate;
+            animation: glow 3s ease-in-out infinite alternate;
             pointer-events: none;
             user-select: none;
+            letter-spacing: 2px;
         }
         @keyframes glow {
-            from { text-shadow: 0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4); }
-            to { text-shadow: 0 0 30px rgba(255, 105, 180, 1), 0 0 60px rgba(255, 105, 180, 0.6), 0 0 80px rgba(255, 105, 180, 0.4); }
+            from { text-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(100, 200, 255, 0.3); }
+            to { text-shadow: 0 0 25px rgba(255, 255, 255, 0.8), 0 0 50px rgba(100, 200, 255, 0.6), 0 0 70px rgba(255, 255, 255, 0.4); }
         }
         .firework-btn {
-            padding: 1rem 3rem;
-            font-size: 1.2rem;
-            border: none;
+            padding: 1rem 3.5rem;
+            font-size: 1.3rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57, #ff9ff3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
             color: #fff;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 25px rgba(255, 107, 107, 0.4);
+            transition: all 0.4s ease;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: bold;
+            letter-spacing: 3px;
+            font-weight: 300;
             outline: none;
             -webkit-tap-highlight-color: transparent;
         }
         .firework-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.8);
             transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 8px 35px rgba(255, 107, 107, 0.6);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.4), 0 0 80px rgba(100, 200, 255, 0.2);
         }
         .firework-btn:active {
             transform: translateY(1px) scale(0.98);
@@ -66,51 +71,99 @@
             height: 100%;
             pointer-events: none;
         }
-        #stars { z-index: 1; }
+        #galaxy { z-index: 1; }
+        #stars { z-index: 2; }
         #fireworks { z-index: 5; }
         .footer {
             position: fixed;
             bottom: 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.4);
             font-size: 0.8rem;
             z-index: 10;
             pointer-events: none;
             user-select: none;
+            letter-spacing: 1px;
         }
         @media (max-width: 600px) {
             h1 { font-size: 2rem; }
-            .firework-btn { padding: 0.8rem 2rem; font-size: 1rem; }
+            .firework-btn { padding: 0.8rem 2.5rem; font-size: 1rem; }
         }
     </style>
 </head>
 <body>
+    <!-- 三层Canvas：银河层 -> 星星层 -> 烟花层 -->
+    <canvas id="galaxy"></canvas>
     <canvas id="stars"></canvas>
     <canvas id="fireworks"></canvas>
     
     <div class="container">
         <h1>This is Julie's Website</h1>
-        <button class="firework-btn" id="magicBtn">🎆 Click for Magic</button>
+        <button class="firework-btn" id="magicBtn">✨ Make a Wish</button>
     </div>
     
     <div class="footer">Made with ❤️ for Julie</div>
 
     <script>
-        // --- Setup ---
+        // --- Setup Canvases ---
+        const galaxyCanvas = document.getElementById('galaxy');
+        const galaxyCtx = galaxyCanvas.getContext('2d');
         const starsCanvas = document.getElementById('stars');
         const starsCtx = starsCanvas.getContext('2d');
         const fireworksCanvas = document.getElementById('fireworks');
         const ctx = fireworksCanvas.getContext('2d');
         
-        let width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
-        let height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
+        let width = galaxyCanvas.width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
+        let height = galaxyCanvas.height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
 
         window.addEventListener('resize', () => {
-            width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
-            height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
+            width = galaxyCanvas.width = starsCanvas.width = fireworksCanvas.width = window.innerWidth;
+            height = galaxyCanvas.height = starsCanvas.height = fireworksCanvas.height = window.innerHeight;
+            initGalaxy();
             initStars();
         });
 
-        // --- Twinkling Stars Background ---
+        // --- 1. Galaxy Background (Milky Way) ---
+        const galaxyParticles = [];
+        function initGalaxy() {
+            galaxyParticles.length = 0;
+            const count = 1500; // 银河星星数量
+            for (let i = 0; i < count; i++) {
+                // 银河形状：中间宽，两边窄，呈带状分布
+                const x = Math.random() * width;
+                const centerX = width / 2;
+                const distFromCenter = Math.abs(x - centerX);
+                const maxDist = width * 0.8;
+                
+                // 越靠近中心，Y轴分布越集中；越远越分散，形成带状
+                const spread = (distFromCenter / maxDist) * (height * 0.4) + 50;
+                const centerY = height / 2 + Math.sin((x / width) * Math.PI * 2) * 50; // 轻微弯曲
+                
+                const y = centerY + (Math.random() - 0.5) * spread;
+                
+                // 只有落在带内的才保留，形成银河形状
+                if (Math.abs(y - centerY) < spread / 2) {
+                    galaxyParticles.push({
+                        x: x,
+                        y: y,
+                        size: Math.random() * 1.2,
+                        alpha: Math.random() * 0.4 + 0.1, // 比较暗淡
+                        color: `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, 255,`
+                    });
+                }
+            }
+        }
+
+        function drawGalaxy() {
+            galaxyCtx.clearRect(0, 0, width, height);
+            galaxyParticles.forEach(p => {
+                galaxyCtx.beginPath();
+                galaxyCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                galaxyCtx.fillStyle = `${p.color} ${p.alpha})`;
+                galaxyCtx.fill();
+            });
+        }
+
+        // --- 2. Twinkling Stars ---
         const stars = [];
         function initStars() {
             stars.length = 0;
@@ -138,47 +191,38 @@
             });
             requestAnimationFrame(drawStars);
         }
-        
-        initStars();
-        drawStars();
 
-        // --- Classic Beautiful Fireworks ---
-        
-        // 漂亮的配色方案
+        // --- 3. Fireworks System ---
         const colors = [
-            '#ff0040', '#ff0080', '#ff00bf', '#ff00ff', // Pinks/Reds
-            '#00ffff', '#00bfff', '#0080ff', '#0040ff', // Blues/Cyans
-            '#ffff00', '#ffbf00', '#ff8000', '#ff4000', // Yellows/Oranges
-            '#00ff00', '#80ff00', '#bfff00',            // Greens
-            '#ffffff'                                   // White
+            '#ff0040', '#ff0080', '#ff00bf', '#ff00ff', 
+            '#00ffff', '#00bfff', '#0080ff', '#0040ff', 
+            '#ffff00', '#ffbf00', '#ff8000', '#ff4000', 
+            '#00ff00', '#80ff00', '#ffffff'
         ];
 
         class Particle {
-            constructor(x, y, color, velocity, angle) {
+            constructor(x, y, color, velocity, angle, isBig) {
                 this.x = x;
                 this.y = y;
                 this.color = color;
                 this.alpha = 1;
-                this.decay = Math.random() * 0.015 + 0.008; // Random fade speed
+                // 大烟花消失得慢一点，小烟花快一点
+                this.decay = isBig ? (Math.random() * 0.012 + 0.006) : (Math.random() * 0.02 + 0.01); 
                 
-                // Spread velocity slightly for natural look
-                const spread = Math.random() * 0.5; 
+                const spread = isBig ? 0.5 : 0.2;
                 this.vx = Math.cos(angle) * velocity + (Math.random() - 0.5) * spread;
                 this.vy = Math.sin(angle) * velocity + (Math.random() - 0.5) * spread;
                 
-                this.gravity = 0.04;
+                this.gravity = isBig ? 0.05 : 0.08;
                 this.friction = 0.96;
-                
-                // Trail history
                 this.trail = [];
-                this.maxTrail = 5;
+                this.maxTrail = isBig ? 6 : 3;
+                this.isBig = isBig;
             }
 
             update() {
                 this.trail.push({x: this.x, y: this.y, alpha: this.alpha});
-                if (this.trail.length > this.maxTrail) {
-                    this.trail.shift();
-                }
+                if (this.trail.length > this.maxTrail) this.trail.shift();
 
                 this.vx *= this.friction;
                 this.vy *= this.friction;
@@ -199,41 +243,40 @@
                     for (let i = 1; i < this.trail.length; i++) {
                         context.lineTo(this.trail[i].x, this.trail[i].y);
                     }
-                    // Gradient stroke for trail
-                    const gradient = context.createLinearGradient(
-                        this.trail[0].x, this.trail[0].y, 
-                        this.x, this.y
-                    );
-                    gradient.addColorStop(0, `rgba(0,0,0,0)`);
-                    gradient.addColorStop(1, this.color.replace(')', `, ${this.alpha * 0.5})`).replace('rgb', 'rgba'));
-                    
-                    context.strokeStyle = gradient;
-                    context.lineWidth = 2;
+                    const rgb = this.color.match(/\d+/g);
+                    context.strokeStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${this.alpha * 0.4})`;
+                    context.lineWidth = this.isBig ? 2.5 : 1.5;
                     context.lineCap = 'round';
                     context.stroke();
                 }
 
                 // Draw Head
                 context.beginPath();
-                context.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
-                context.fillStyle = this.color.replace(')', `, ${this.alpha})`).replace('rgb', 'rgba');
-                context.shadowColor = this.color;
-                context.shadowBlur = 10;
+                const radius = this.isBig ? 3 : 1.5;
+                context.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                const rgb = this.color.match(/\d+/g);
+                context.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${this.alpha})`;
+                if (this.isBig) {
+                    context.shadowColor = this.color;
+                    context.shadowBlur = 15;
+                }
                 context.fill();
-                context.shadowBlur = 0; // Reset
+                context.shadowBlur = 0;
             }
         }
 
         class Rocket {
-            constructor(targetX, targetY, color) {
+            constructor(targetX, targetY, color, isBig) {
                 this.x = Math.random() * width;
                 this.y = height;
                 this.targetX = targetX || Math.random() * (width * 0.8) + (width * 0.1);
-                this.targetY = targetY || Math.random() * (height * 0.4) + (height * 0.1);
+                this.targetY = targetY || Math.random() * (height * 0.35) + (height * 0.1);
                 this.color = color || colors[Math.floor(Math.random() * colors.length)];
+                this.isBig = isBig; // 标记是大烟花还是背景小烟花
                 
                 const angle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
-                const speed = 12 + Math.random() * 3;
+                // 大烟花速度快，小烟花速度慢
+                const speed = isBig ? (13 + Math.random() * 3) : (8 + Math.random() * 2);
                 
                 this.vx = Math.cos(angle) * speed;
                 this.vy = Math.sin(angle) * speed;
@@ -246,14 +289,13 @@
             update() {
                 if (!this.exploded) {
                     this.trail.push({x: this.x, y: this.y});
-                    if (this.trail.length > 8) this.trail.shift();
+                    if (this.trail.length > (this.isBig ? 10 : 5)) this.trail.shift();
                     
                     this.x += this.vx;
                     this.y += this.vy;
-                    this.vy += 0.15; // Gravity pulling up slower
+                    this.vy += 0.15; 
                     
-                    // Explode when reaching peak or target area
-                    if (this.vy >= -2 || this.y <= this.targetY) {
+                    if (this.vy >= -1 || this.y <= this.targetY) {
                         this.explode();
                     }
                 } else {
@@ -264,25 +306,25 @@
 
             draw() {
                 if (!this.exploded) {
-                    // Draw Rocket Trail
                     if (this.trail.length > 1) {
                         ctx.beginPath();
                         ctx.moveTo(this.trail[0].x, this.trail[0].y);
                         for (let i = 1; i < this.trail.length; i++) {
                             ctx.lineTo(this.trail[i].x, this.trail[i].y);
                         }
-                        ctx.strokeStyle = `rgba(255, 255, 255, 0.6)`;
-                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${this.isBig ? 0.7 : 0.4})`;
+                        ctx.lineWidth = this.isBig ? 3 : 1.5;
                         ctx.lineCap = 'round';
                         ctx.stroke();
                     }
                     
-                    // Draw Rocket Head
                     ctx.beginPath();
-                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.arc(this.x, this.y, this.isBig ? 3.5 : 2, 0, Math.PI * 2);
                     ctx.fillStyle = '#fff';
-                    ctx.shadowColor = '#fff';
-                    ctx.shadowBlur = 15;
+                    if (this.isBig) {
+                        ctx.shadowColor = '#fff';
+                        ctx.shadowBlur = 15;
+                    }
                     ctx.fill();
                     ctx.shadowBlur = 0;
                 } else {
@@ -292,21 +334,31 @@
 
             explode() {
                 this.exploded = true;
-                const particleCount = 120; // Lots of particles for full look
-                const baseVelocity = 4 + Math.random() * 3;
+                // 大烟花：粒子多，范围大
+                // 小烟花：粒子少，范围小，颜色淡
+                const count = this.isBig ? 150 : 40;
+                const baseVelocity = this.isBig ? 5 : 2.5;
                 
-                for (let i = 0; i < particleCount; i++) {
-                    const angle = (Math.PI * 2 * i) / particleCount;
-                    // Slight random variation in velocity for organic feel
-                    const velocity = baseVelocity + Math.random() * 2; 
-                    this.particles.push(new Particle(this.x, this.y, this.color, velocity, angle));
+                // 如果是小烟花，降低颜色透明度，让它看起来更远
+                let displayColor = this.color;
+                if (!this.isBig) {
+                    const rgb = this.color.match(/\d+/g);
+                    displayColor = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.6)`;
+                }
+
+                for (let i = 0; i < count; i++) {
+                    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+                    const velocity = baseVelocity + Math.random() * (this.isBig ? 3 : 1.5);
+                    this.particles.push(new Particle(this.x, this.y, displayColor, velocity, angle, this.isBig));
                 }
                 
-                // Add some "sparkle" particles (white/silver)
-                for (let i = 0; i < 30; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const velocity = Math.random() * 5 + 2;
-                    this.particles.push(new Particle(this.x, this.y, 'rgb(255, 255, 255)', velocity, angle));
+                if (this.isBig) {
+                    // 大烟花额外加闪光
+                    for (let i = 0; i < 40; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const velocity = Math.random() * 6 + 3;
+                        this.particles.push(new Particle(this.x, this.y, 'rgb(255, 255, 255)', velocity, angle, true));
+                    }
                 }
             }
 
@@ -316,47 +368,58 @@
         }
 
         let rockets = [];
+        let lastBackgroundFireworkTime = 0;
 
-        function launchFireworks() {
-            // Launch 3-5 rockets at once
-            const count = Math.floor(Math.random() * 3) + 3;
+        function launchBigFirework() {
+            // 点击按钮：发射 3 个大烟花
+            const count = 3;
             for (let i = 0; i < count; i++) {
                 setTimeout(() => {
-                    rockets.push(new Rocket());
-                }, i * 200);
+                    rockets.push(new Rocket(null, null, null, true));
+                }, i * 300);
             }
         }
 
-        function animate() {
-            // Create motion blur trail effect
+        function launchBackgroundFirework() {
+            // 背景自动：偶尔发射 1 个小烟花
+            rockets.push(new Rocket(null, null, null, false));
+        }
+
+        function animate(timestamp) {
+            // 清空烟花层，保留拖尾效果
             ctx.fillStyle = 'rgba(15, 12, 41, 0.2)';
             ctx.fillRect(0, 0, width, height);
             
-            // Use filter to safely remove finished rockets
+            // 更新烟花
             rockets = rockets.filter(rocket => {
                 rocket.update();
                 rocket.draw();
                 return !rocket.isDone();
             });
             
-            // Random automatic launches
-            if (Math.random() < 0.03) {
-                rockets.push(new Rocket());
+            // 逻辑：背景自动放烟花 (每 2.5 秒 ~ 4.5 秒 一次)
+            if (timestamp - lastBackgroundFireworkTime > 2500 + Math.random() * 2000) {
+                launchBackgroundFirework();
+                lastBackgroundFireworkTime = timestamp;
             }
             
             requestAnimationFrame(animate);
         }
 
+        // --- Initialization ---
+        initGalaxy();
+        drawGalaxy(); // 静态绘制银河，不需要每帧重绘，除非需要动态效果
+        // 如果需要银河微动，可以把 drawGalaxy() 放入 animate 循环，但为了性能这里静态即可
+        
+        initStars();
+        drawStars(); // 星星动态闪烁
+
         // Event Listener
-        document.getElementById('magicBtn').addEventListener('click', launchFireworks);
+        document.getElementById('magicBtn').addEventListener('click', launchBigFirework);
 
-        // Initial Auto Launch
-        setTimeout(() => {
-            rockets.push(new Rocket());
-            setTimeout(() => rockets.push(new Rocket()), 500);
-        }, 800);
+        // Start Loop
+        requestAnimationFrame(animate);
 
-        animate();
     </script>
 </body>
 </html>
