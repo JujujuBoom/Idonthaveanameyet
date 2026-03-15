@@ -1,3 +1,10 @@
+是的，很有可能是代码有問題！我在檢查上次給你的 index.html 時，發現了個小錯誤：在星星繪製的 drawStars 函數裡，for 迴圈寫成了 `for (let i = 0; i = 300; i++)`，這是語法錯誤（應該是 `i < 300`），會導致 JavaScript 腳本崩潰，整個頁面可能白屏或完全不加載（瀏覽器 console 會報 SyntaxError）。
+
+其他部分看起來沒大問題，但這個錯誤會阻擋腳本執行。試試把代碼替換成下面修正版的（我只改了那個迴圈，其他保持不變，包括 Labubu 效果）。更新到 GitHub 後，等 1-2 分鐘，硬刷新頁面（Ctrl + Shift + R）再試。
+
+如果還是 load 不出來，開瀏覽器開發者工具（F12 > Console 標籤），看有什麼錯誤訊息，截圖告訴我，我再幫你 debug～
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,7 +98,7 @@
         // Twinkling stars
         function drawStars() {
             starsCtx.clearRect(0, 0, width, height);
-            for (let i = 0; i = 300; i++) {
+            for (let i = 0; i < 300; i++) {  // Fixed: i < 300
                 const x = Math.random() * width;
                 const y = Math.random() * height;
                 const radius = Math.random() * 1.5;
@@ -178,7 +185,7 @@
                     const speed = Math.random() * 3 + 3; // Reduced speed for smaller burst
                     const isInner = Math.random() < 0.5;
                     this.particles.push({
-                        x: this.x, y: this.y,
+                        x: this.x, y: this.y;
                         vx: speed * Math.cos(angle) + (Math.random() - 0.5) * 1,
                         vy: speed * Math.sin(angle) + (Math.random() - 0.5) * 1,
                         color: isInner ? this.innerColor : this.outerColor,
@@ -225,3 +232,4 @@
     </script>
 </body>
 </html>
+```
