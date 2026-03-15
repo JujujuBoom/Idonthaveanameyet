@@ -108,11 +108,12 @@
         // Fireworks
         class Rocket {
             constructor() {
-                this.x = width / 2 + (Math.random() - 0.5) * 200; // Spread from center
+                this.x = width / 2 + (Math.random() - 0.5) * 300; // Wider spread
                 this.y = height; // Start at bottom
-                this.vy = -(Math.random() * 5 + 12); // Upward speed
-                this.explosionHeight = Math.random() * (height / 3) + height / 6; // Burst in upper area
-                this.color = ['#ff6b6b', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3'][Math.floor(Math.random() * 6)];
+                this.vy = -(Math.random() * 4 + 14); // Faster upward
+                this.explosionHeight = Math.random() * (height / 4) + height / 8; // Higher bursts
+                this.innerColor = ['#ff0000', '#00ff00', '#ff69b4', '#ffffff'][Math.floor(Math.random() * 4)]; // Red, green, pink, white
+                this.outerColor = this.innerColor === '#ff0000' ? '#ff69b4' : this.innerColor === '#00ff00' ? '#00ffff' : this.innerColor; // Matching halo
                 this.exploded = false;
                 this.particles = [];
             }
@@ -126,40 +127,54 @@
                     this.particles.forEach(p => {
                         p.x += p.vx;
                         p.y += p.vy;
-                        p.vy += 0.1; // Gravity
+                        p.vy += 0.05; // Lighter gravity for slower fall
                         p.alpha -= p.decay;
+                        p.trail.push({x: p.x, y: p.y, alpha: p.alpha}); // For tail
+                        if (p.trail.length > 10) p.trail.shift(); // Limit tail length
                     });
-                    this.particles = this.particles.filter(p => p.alpha > 0);
+                    this.particles = this.particles.filter(p => p.alpha > 0.1);
                 }
             }
             draw() {
+                ctx.shadowBlur = 10; // Glow effect
+                ctx.shadowColor = this.innerColor;
                 if (!this.exploded) {
                     // Draw rocket trail
                     ctx.beginPath();
                     ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(this.x, this.y + 15); // Tail
-                    ctx.strokeStyle = this.color;
-                    ctx.lineWidth = 2;
+                    ctx.lineTo(this.x, this.y + 20); // Longer tail
+                    ctx.strokeStyle = this.innerColor;
+                    ctx.lineWidth = 3;
                     ctx.stroke();
                 } else {
                     this.particles.forEach(p => {
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                        ctx.fillStyle = `${p.color}${Math.floor(p.alpha * 255).toString(16).padStart(2, '0')}`;
-                        ctx.fill();
+                        ctx.moveTo(p.x, p.y);
+                        p.trail.forEach((t, i) => {
+                            ctx.lineTo(t.x, t.y);
+                            ctx.strokeStyle = `${p.color}${(t.alpha * 255 * (1 - i / p.trail.length)).toString(16).padStart(2, '0')}`;
+                            ctx.lineWidth = 2 * (1 - i / p.trail.length); // Thinner towards tail
+                            ctx.stroke();
+                        });
                     });
                 }
+                ctx.shadowBlur = 0;
             }
             explode() {
                 this.exploded = true;
-                for (let i = 0; i < 100; i++) {
+                const numParticles = 200; // Denser burst
+                for (let i = 0; i < numParticles; i++) {
+                    const angle = (i / numParticles) * Math.PI * 2;
+                    const speed = Math.random() * 5 + 5; // Varied speed for layers
+                    const isInner = Math.random() < 0.5; // Half inner, half outer
                     this.particles.push({
                         x: this.x, y: this.y,
-                        vx: (Math.random() - 0.5) * 10,
-                        vy: (Math.random() - 0.5) * 10 - 2, // Slight upward burst
-                        color: this.color,
+                        vx: speed * Math.cos(angle) + (Math.random() - 0.5) * 1, // Mostly radial with slight random
+                        vy: speed * Math.sin(angle) + (Math.random() - 0.5) * 1,
+                        color: isInner ? this.innerColor : this.outerColor,
                         alpha: 1,
-                        decay: Math.random() * 0.02 + 0.015
+                        decay: Math.random() * 0.01 + 0.005, // Slower fade
+                        trail: [] // For drawing streaks
                     });
                 }
             }
@@ -172,18 +187,19 @@
 
         function launchFireworks() {
             for (let i = 0; i < 3; i++) { // Launch 3 rockets per click
-                setTimeout(() => rockets.push(new Rocket()), i * 200);
+                setTimeout(() => rockets.push(new Rocket()), i * 300); // Slight delay for sequence
             }
         }
 
         function animate() {
-            ctx.clearRect(0, 0, width, height); // Clear without fade for cleaner look
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Gentle fade for smoke trails
+            ctx.fillRect(0, 0, width, height);
             rockets.forEach((rocket, index) => {
                 rocket.update();
                 rocket.draw();
                 if (rocket.isDone()) rockets.splice(index, 1);
             });
-            if (Math.random() < 0.01) { // Occasional random launch
+            if (Math.random() < 0.005) { // Rare random launch
                 rockets.push(new Rocket());
             }
             requestAnimationFrame(animate);
@@ -193,7 +209,7 @@
         // Initial launches after page load
         setTimeout(() => {
             for (let i = 0; i < 3; i++) {
-                setTimeout(() => rockets.push(new Rocket()), i * 200);
+                setTimeout(() => rockets.push(new Rocket()), i * 300);
             }
         }, 500);
     </script>
